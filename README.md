@@ -116,7 +116,25 @@
     | `application/xml` | XML 포맷 | 일부 레거시 시스템 |
 
 ### 요구사항 4 - redirect 방식으로 이동
-* 
+* 302 Found
+  * 302 Found는 요청한 자원이 일시적으로 다른 URI에 위치한다
+  * 이 리다이렉트는 임시적인 것이므로, 클라이언트는 다음 요청부터도 원래의 URI를 계속 사용해야 합니다.
+  * 서버는 Location 헤더를 반드시 포함해서 클라이언트가 리다이렉트할 수 있게 해야 합니다.
+  *  브라우저(사용자 에이전트)가 자동으로 리다이렉트할 경우,
+     원래 POST였으면 리다이렉트 요청도 POST로 유지해야 한다
+     * 하지만 대부분의 브라우저는 무조건 GET으로 바꿈
+      → 결과적으로 POST → GET으로 리다이렉트됨
+      → 이건 명세 위반이었지만 현실에서는 널리 사용됨
+     - 303 See Other: 아예 GET으로 바꾸라고 명시함(POST 이후 리다이렉트에 적합)
+     - 307 Temporary Redirect: 명세대로 메서드를 그대로 유지(POST -> POST)
+     
+       | 상황 | 추천 상태 코드 |
+       |------|----------------|
+       | REST API POST 후 생성된 리소스 보여주기 | `201 Created + Location: /resource/{id}` |
+       | 영구 리다이렉트 | `301 Moved Permanently` |
+       | form POST 후 결과 페이지 이동 | `303 See Other` |
+       | 임시 리다이렉트 (같은 메서드 유지) | `307 Temporary Redirect` |
+
 
 ### 요구사항 5 - cookie
 * 

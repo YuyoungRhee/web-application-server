@@ -38,8 +38,7 @@ public class UserController {
         User user = new User(userId, password, name, email);
         DataBase.addUser(user);
 
-        response201Header(dos);
-//        responseBody(dos, body);
+        redirectTo(dos, "/index.html");
     }
 
     private String decode(String body) {
@@ -53,18 +52,27 @@ public class UserController {
         return decoded;
     }
 
-    private void response201Header(DataOutputStream dos) {
-        int lengthOfBodyContent = 0;
+//    private void response201Header(DataOutputStream dos) {
+//        int lengthOfBodyContent = 0;
+//
+//        try {
+//            dos.writeBytes("HTTP/1.1 201 Created \r\n");
+//            dos.writeBytes("\r\n");
+//            dos.flush();
+//        } catch (IOException e) {
+//            log.error(e.getMessage());
+//            throw new IllegalStateException(e);
+//        }
+//    }
 
+    private void redirectTo(DataOutputStream dos, String location) {
         try {
-            dos.writeBytes("HTTP/1.1 201 Created \r\n");
-//            dos.writeBytes("Location: ");
-//            dos.writeBytes("Content-Type: application/json \r\n");
-//            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+            dos.writeBytes("HTTP/1.1 302 Found\r\n");
+            dos.writeBytes("Location: " + location + "\r\n");
+            dos.writeBytes("Content-Length: 0\r\n");
             dos.writeBytes("\r\n");
             dos.flush();
         } catch (IOException e) {
-            log.error(e.getMessage());
             throw new IllegalStateException(e);
         }
     }
