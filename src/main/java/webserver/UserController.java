@@ -3,6 +3,8 @@ package webserver;
 import db.DataBase;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.Map;
 import model.User;
 import org.slf4j.Logger;
@@ -12,9 +14,21 @@ import util.HttpRequestUtils;
 public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
-    public void createUser(String url, DataOutputStream dos) {
-        String queryString = url.split("\\?")[1];
-        Map<String, String> paramDatas = HttpRequestUtils.parseQueryString(queryString);
+    public void handle(String url, DataOutputStream dos, String body) {
+        int firstSlash = url.indexOf("/");           // 0
+        int secondSlash = url.indexOf("/", firstSlash + 1);
+
+        String path = url.substring(secondSlash);
+        if (path.equals("/create")) {
+            createUser(dos, body);
+        }
+    }
+
+    public void createUser(DataOutputStream dos, String body) {
+
+        String decoded = decode(body);
+
+        Map<String, String> paramDatas = HttpRequestUtils.parseQueryString(decoded);
 
         String userId = paramDatas.get("userId");
         String password = paramDatas.get("password");
@@ -26,6 +40,17 @@ public class UserController {
 
         response201Header(dos);
 //        responseBody(dos, body);
+    }
+
+    private String decode(String body) {
+        String decoded = "";
+        try {
+            decoded = URLDecoder.decode(body, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            log.error("디코딩 실패", e.getMessage());
+            throw new IllegalArgumentException("디코딩 실패", e);
+        }
+        return decoded;
     }
 
     private void response201Header(DataOutputStream dos) {

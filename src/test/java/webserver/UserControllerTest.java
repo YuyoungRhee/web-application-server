@@ -14,9 +14,9 @@ public class UserControllerTest {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(out);
 
-        String queryString = "?userId=test&password=1234&name=홍길동&email=hong@test.com";
+        String body = "userId=test&password=1234&name=홍길동&email=hong@test.com";
 
-        new UserController().createUser(queryString, dos);
+        new UserController().createUser(dos, body);
 
         String result = out.toString("UTF-8");
         assertThat(result).contains("201 Created");

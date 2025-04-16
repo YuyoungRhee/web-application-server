@@ -12,6 +12,7 @@ public class DataBase {
 
     public static void addUser(User user) {
         users.put(user.getUserId(), user);
+        System.out.println("데이터베이스: " + users);
     }
 
     public static User findUserById(String userId) {

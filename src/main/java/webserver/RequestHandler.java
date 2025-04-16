@@ -8,8 +8,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.IOUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -32,24 +34,40 @@ public class RequestHandler extends Thread {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
             DataOutputStream dos = new DataOutputStream(out);
 
-            String line = bufferedReader.readLine();
-
-            if(line == null || line.isEmpty()) {
+            String requestLine = bufferedReader.readLine();
+            if (requestLine == null || requestLine.isEmpty()) {
                 send400Error(dos);
                 return;
             }
 
-            String[] tokens = line.split(" ");
+            int contentLength = 0;
+            String line;
+            while ((line = bufferedReader.readLine()) != null && !line.isEmpty()) {
+                if (line.startsWith("Content-Length:")) {
+                    String[] split = line.split(":");
+
+                    System.out.println("split: " + Arrays.toString(split));
+                    contentLength = Integer.parseInt(line.split(":")[1].trim());
+                    log.info("contentLength: " + contentLength);
+                }
+            }
+
+            String body = null;
+            if (contentLength > 0) {
+                body = IOUtils.readData(bufferedReader, contentLength);
+            }
+
+            String[] tokens = requestLine.split(" ");
             String url = tokens[1];
 
             log.info("url: " + url);
             File file = new File("./webapp" + url);
 
-            if(file.exists()) {
+            if (file.exists()) {
                 staticFileHandler.serve(file, dos);
                 return;
             }
-            userController.createUser(url, dos);
+            userController.handle(url, dos, body);
 
         } catch (IOException e) {
             log.error(e.getMessage());
