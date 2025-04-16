@@ -41,24 +41,46 @@ public class RequestHandler extends Thread {
             String url = tokens[1];
 
             log.info("url: " + url);
-            byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+            File file = new File("./webapp" + url);
+            byte[] body = Files.readAllBytes(file.toPath());
 
-            response200Header(dos, body.length);
+            String contentType = guessContentType(file.getName());
+            response200Header(dos, body.length, contentType);
             responseBody(dos, body);
         } catch (IOException e) {
             log.error(e.getMessage());
         }
     }
 
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
+    private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String contentType) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+            dos.writeBytes("Content-Type: " + contentType + "\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             log.error(e.getMessage());
         }
+    }
+
+    private String guessContentType(String filename) {
+        String contentType = "text/html;charset=utf-8"; // 기본값
+
+        int dotIndex = filename.lastIndexOf(".");
+        if (dotIndex == -1) {
+            return contentType;
+        }
+
+        String ext = filename.substring(dotIndex + 1);
+        switch (ext) {
+            case "css":
+                contentType = "text/css";
+                break;
+            case "js":
+                contentType = "application/javascript";
+                break;
+        }
+        return contentType;
     }
 
     private void responseBody(DataOutputStream dos, byte[] body) {

@@ -15,7 +15,7 @@
 * 각 요구사항을 구현하는 것이 중요한 것이 아니라 구현 과정을 통해 학습한 내용을 인식하는 것이 배움에 중요하다. 
 
 ### 요구사항 1 - http://localhost:8080/index.html로 접속시 응답
-* Thread에서 start() vs run() 차이
+* **Thread에서 start() vs run() 차이**
   - run(): 현재 스레드에서 메서드 실행 (단순 메서드 호출)
   - start(): JVM이 새 스레드 생성 -> run() 실행 (멀티 스레딩 발생)
   ```java
@@ -27,23 +27,23 @@
     // Case 2: start 호출
     t.start(); // "Thread-0" 이 출력됨 → 진짜 스레드에서 실행
   ```
-- InputStream: 데이터를 읽는 스트림 (외부 -> 내 프로그램)
+- **InputStream**: 데이터를 읽는 스트림 (외부 -> 내 프로그램)
   - read()는 1바이트씩 읽음
   - 데이터 없으면 블로킹 (계속 기다림)
   - -1은 EOF (파일 끝 또는 연결 끊김)
-- OutputStream: 데이터를 보내는 스트림 (내 프로그램 -> 외부)
+- **OutputStream**: 데이터를 보내는 스트림 (내 프로그램 -> 외부)
   - “사용자에게 응답을 넘긴다” = OutputStream을 통해 HTTP 메시지를 보내는 것
   - write(byte[]): 바이트 배열을 클라이언트로 전송
   - flush(): 버퍼에 쌓인 데이터를 강제로 보냄 (네트워크 통신에선 매우 중요)
 
-- OutputStream은 반드시 flush() 해줘야 할까?
+- **OutputStream은 반드시 flush() 해줘야 할까?**
 
     ✔ 네트워크 스트림은 내부에 버퍼가 있음
 
     → write()만 해도 당장 전송 안 됨
 
     → flush()를 호출해야 진짜 전송
-- BuffredReader 
+- **BuffredReader** 
   
     → 네트워크나 파일에서 1바이트씩 읽는 건 엄청 비효율적
 
@@ -56,13 +56,22 @@
     | 속도 | 느림 (1바이트씩 읽으면 비효율) | 빠름 (버퍼 사용) |
     | 사용 시기 | 파일, 소켓 등에서 로우 데이터 읽을 때 | 텍스트 기반 프로토콜 (HTTP 등) 읽을 때 |
 
-- DataOutputStream
+- **DataOutputStream**
   - DataOutputStream은 OutputStream을 감싸서 더 편하게 기초 데이터 타입이나 문자열을 쉽게 쓸 수 있게 해주는 보조 스트림.
     - FilterOutputStream을 상속한 클래스 
     - 내부적으로 OutputStream을 들고 있고, 거기에 기능을 추가한 구조
   - OuputSteam 문제점
     - 문자열마다 getBytes() 해야 되고
     - int, short, long 같은 숫자도 전송 불편 → 너무 저수준이라 귀찮고 가독성도 떨어짐
+
+- **Content-Type**
+  - Content-Type은 서버가 응답하는 데이터의 타입을 나타내는 HTTP 헤더. 브라우저는 이 헤더를 보고 “어떻게 해석할지” 결정함
+  1. CSS가 적용되지 않아 확인해보니 서버가 Content-Type: text/html로 응답하고 있었음.
+  2. 브라우저는 Content-Type을 기준으로 파일을 해석하므로, 잘못된 타입이면 CSS로 인식하지 않음.
+  3. 순수 자바 웹서버였기 때문에 .css, .js 요청 시 Content-Type을 switch문으로 직접 설정함.
+      -  Spring Boot는 요청 확장자나 컨트롤러 반환 타입에 따라 Content-Type을 자동 설정함.
+  4. 이를 통해 브라우저가 리소스를 올바르게 해석하고 스타일이 정상 적용되었음.
+
 ### 요구사항 2 - get 방식으로 회원가입
 * 
 
