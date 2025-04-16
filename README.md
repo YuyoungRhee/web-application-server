@@ -73,10 +73,47 @@
   4. 이를 통해 브라우저가 리소스를 올바르게 해석하고 스타일이 정상 적용되었음.
 
 ### 요구사항 2 - get 방식으로 회원가입
-* 
+* 201 Created
+  * 새로운 리소스가 성공적으로 생성되었을 때 사용하는 상태코드
+  * "생성됨"을 알리는 것뿐만 아니라, "어디에 생성되었는지"를 클라이언트에게 알려줌
+    - RESTful API - Location 헤더에 새로운 리소스의 URI 경로를 담음 / body에는 새로운 리소스의 정보를 담음
+    - RESTful하지 않은 API
+      - 선택지 1: Location에 논리적으로 접근 가능한 URL을 줌
+        ```http request
+        HTTP/1.1 201 Created
+        Location: /user/profile?userId=user
+        ```
+      - 선택지 2: Location 없이, 바디에만 생성 결과를 담는다
+        ```http request
+        HTTP/1.1 201 Created
+        Content-Type: application/json
+        
+        {
+        "userId": "user",
+        "name": "멍구",
+        "profileUrl": "/user/profile?userId=user"
+        }
+        ```
 
 ### 요구사항 3 - post 방식으로 회원가입
-* 
+- form으로 POST 요청을 보내면, 파라미터 데이터는 HTTP body에 들어간다
+
+
+- GET vs POST
+  - Content-Type
+    - GET: 바디가 없기 때문에 필요 없음
+    - POST: 대부분 존재 (PUT, PATCH 같이 Request에 body가 있다면 대부분 명시필요)
+    - 대부분의 서버 프레임워크(Spring)는 GET 바디를 무시함.
+    
+    **주요 Content-Type 종류**
+
+    | Content-Type | 설명 | 주로 사용되는 곳 |
+    |--------------|------|------------------|
+    | `application/x-www-form-urlencoded` | `key=value&key2=value2` 형식 | ✅ HTML `<form>` 기본 전송 방식 |
+    | `multipart/form-data` | 파일 업로드용 (바운더리로 구분) | ✅ 이미지, 파일 전송 |
+    | `application/json` | JSON 포맷 데이터 | ✅ REST API, JS fetch/ajax |
+    | `text/plain` | 그냥 문자열 | 디버깅용, 테스트 |
+    | `application/xml` | XML 포맷 | 일부 레거시 시스템 |
 
 ### 요구사항 4 - redirect 방식으로 이동
 * 
