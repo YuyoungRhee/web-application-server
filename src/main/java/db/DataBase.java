@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 
+import java.util.Optional;
 import model.User;
 
 public class DataBase {
@@ -15,8 +16,13 @@ public class DataBase {
         System.out.println("데이터베이스: " + users);
     }
 
-    public static User findUserById(String userId) {
-        return users.get(userId);
+    public static Optional<User> findUserById(String userId) {
+        User result = users.get(userId);
+
+        if(result == null) {
+            return Optional.empty();
+        }
+        return Optional.of(result);
     }
 
     public static Collection<User> findAll() {

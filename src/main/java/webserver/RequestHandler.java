@@ -69,7 +69,6 @@ public class RequestHandler extends Thread {
             }
             userController.handle(url, dos, body);
 
-
         } catch (IOException e) {
             log.error(e.getMessage());
             throw new IllegalStateException(e);
