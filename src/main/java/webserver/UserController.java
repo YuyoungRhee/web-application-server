@@ -6,7 +6,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import model.User;
@@ -17,7 +20,7 @@ import util.HttpRequestUtils;
 public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
-    public void handle(String url, DataOutputStream dos, String body) {
+    public void handle(String url, DataOutputStream dos, List<String> requestHeaders, String requestBody) {
         int firstSlash = url.indexOf("/");           // 0
         int secondSlash = url.indexOf("/", firstSlash + 1);
         String root = url.substring(0, secondSlash);
@@ -27,10 +30,13 @@ public class UserController {
 
         String path = url.substring(secondSlash);
         if (path.equals("/create")) {
-            createUser(dos, body);
+            createUser(dos, requestBody);
         }
         if(path.equals("/login")) {
-            loginUser(dos, body);
+            loginUser(dos, requestBody);
+        }
+        if(path.equals("/list")) {
+            showUserList(dos, requestHeaders);
         }
     }
 
@@ -69,6 +75,72 @@ public class UserController {
         if(password.equals(user.getPassword())) {
             redirectWithCookie(dos, "/index.html");
         }
+    }
+
+    private void showUserList(DataOutputStream dos, List<String> requestHeaders) {
+        LoginStatusChecker loginStatusChecker = new LoginStatusChecker();
+        boolean logined = loginStatusChecker.isLogined(requestHeaders);
+        if(!logined) {
+            send401Error(dos);
+            return;
+        }
+
+        try {
+            Collection<User> allUsers = DataBase.findAll();
+            String userRowsHtml = renderUserRows(allUsers);
+
+            String html = readHtmlTemplate("./webapp/user/list.html")
+                    .replace("{userTableRows}", userRowsHtml);
+
+            byte[] body = html.getBytes(StandardCharsets.UTF_8);
+
+            dos.writeBytes("HTTP/1.1 200 OK\r\n");
+            dos.writeBytes("Content-Type: text/html; charset=utf-8\r\n");
+            dos.writeBytes("Content-Length: " + body.length + "\r\n");
+            dos.writeBytes("\r\n");
+            dos.write(body);
+            dos.flush();
+
+        } catch (IOException e) {
+            log.error("유저 리스트 출력 실패", e);
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private void send401Error(DataOutputStream dos) {
+        try {
+            String body = "<html><body><h1>401 Unauthorized</h1><p>로그인이 필요합니다.</p></body></html>";
+            byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+
+            dos.writeBytes("HTTP/1.1 401 Unauthorized\r\n");
+            dos.writeBytes("Content-Type: text/html; charset=utf-8\r\n");
+            dos.writeBytes("Content-Length: " + bodyBytes.length + "\r\n");
+            dos.writeBytes("\r\n");
+            dos.write(bodyBytes);
+            dos.flush();
+        } catch (IOException e) {
+            log.warn("401 Error: {}", e.getMessage());
+        }
+    }
+
+    private String renderUserRows(Collection<User> users) {
+        StringBuilder sb = new StringBuilder();
+        int index = 1;
+        for (User user : users) {
+            sb.append("<tr>")
+                    .append("<th scope=\"row\">").append(index++).append("</th>")
+                    .append("<td>").append(user.getUserId()).append("</td>")
+                    .append("<td>").append(user.getName()).append("</td>")
+                    .append("<td>").append(user.getEmail()).append("</td>")
+                    .append("<td><a href=\"#\" class=\"btn btn-success\" role=\"button\">수정</a></td>")
+                    .append("</tr>");
+        }
+        return sb.toString();
+    }
+
+    private String readHtmlTemplate(String path) throws IOException {
+        File file = new File(path);
+        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
     }
 
     private void responseLoginFailed(DataOutputStream dos) {

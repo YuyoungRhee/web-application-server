@@ -8,7 +8,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.IOUtils;
@@ -34,7 +35,10 @@ public class RequestHandler extends Thread {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
             DataOutputStream dos = new DataOutputStream(out);
 
+            List<String> requestHeaders = new ArrayList<>();
+
             String requestLine = bufferedReader.readLine();
+            requestHeaders.add(requestLine);
             if (requestLine == null || requestLine.isEmpty()) {
                 send400Error(dos);
                 return;
@@ -43,18 +47,15 @@ public class RequestHandler extends Thread {
             int contentLength = 0;
             String line;
             while ((line = bufferedReader.readLine()) != null && !line.isEmpty()) {
+                requestHeaders.add(line);
                 if (line.startsWith("Content-Length:")) {
-                    String[] split = line.split(":");
-
-                    System.out.println("split: " + Arrays.toString(split));
                     contentLength = Integer.parseInt(line.split(":")[1].trim());
-                    log.info("contentLength: " + contentLength);
                 }
             }
 
-            String body = null;
+            String requestBody = null;
             if (contentLength > 0) {
-                body = IOUtils.readData(bufferedReader, contentLength);
+                requestBody = IOUtils.readData(bufferedReader, contentLength);
             }
 
             String[] tokens = requestLine.split(" ");
@@ -67,7 +68,7 @@ public class RequestHandler extends Thread {
                 staticFileHandler.serve(file, dos);
                 return;
             }
-            userController.handle(url, dos, body);
+            userController.handle(url, dos, requestHeaders, requestBody);
 
         } catch (IOException e) {
             log.error(e.getMessage());
