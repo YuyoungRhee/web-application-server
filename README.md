@@ -137,10 +137,123 @@
 
 
 ### 요구사항 5 - cookie
-* 
+**SameSite**
+
+- SameSite=Lax: Same-Site 요청만 쿠키 보냄 (GET + 안전한 요청만)
+- SameSite=None: Cross-Site에도 쿠키 보냄 → 반드시 Secure 필요 (HTTPS 필수)
+- SameSite=Strict: 진짜 같은 사이트에서만 쿠키 보냄
+
+1. ❗ 쿠키: SameSite 속성
+   •	SameSite=Lax: Same-Site 요청만 쿠키 보냄 (GET + 안전한 요청만)
+   •	SameSite=None: Cross-Site에도 쿠키 보냄 → 반드시 Secure 필요 (HTTPS 필수)
+   •	SameSite=Strict: 진짜 같은 사이트에서만 쿠키 보냄
+
+2. ❗ CSRF 공격 방지
+   •	Cross-Site 요청 + 자동 전송되는 쿠키 → 공격 가능
+   •	그래서 SameSite=Lax가 기본이 됨
+
+3. ❗ CORS (Cross-Origin Resource Sharing)
+   •	Cross-Origin 요청 시, 서버가 명시적으로 허용 안 하면 차단
+   •	즉, Cross-Site 요청은 쿠키, Authorization 헤더 전송 등 다 막힘 (보안 위협 때문)
+
+- 브라우저의 SameSite 기본 정책
+  - Chrome, Edge, Firefox는 기본적으로: SameSite=Lax 정책을 자동으로 적용
+
+브라우저가 Same-Site 와 Cross-Site를 분류하는 방법
+![img.png](img.png)
+
+**Path**
+- URL 중에서 도메인 다음에 오는 리소스 경로를 의미해.
+    https://example.com/user/profile/edit
+
+  - 여기서 /user/profile/edit 이게 바로 HTTP에서 말하는 Path
+    
+    → 쿠키에는 Path 속성을 지정할 수 있음
+    
+    → “이 경로 이하에서만 이 쿠키를 전송하라!“는 의미
+```http request
+Set-Cookie: token=abc123; Path=/admin;
+```
+→ 이 쿠키는 /admin, /admin/settings, /admin/dashboard 등 하위 경로 요청에만 자동으로 포함됨
+
+하지만 / 또는 /user, /login 같은 경로에서는 자동 전송 ❌ 안 됨
+- 브라우저는 기본적으로: Set-Cookie를 보낸 응답의 URL 경로를 Path로 사용함
+
+    ``` http request
+  POST /user/login 
+  Set-Cookie: logined=true
+    ```
+  이러면 Path가 자동으로 /user가 됨
+
+    ✔ 그러면 /user/... 요청엔 쿠키가 붙지만 
+    
+    ❌ /index.html에는 자동 포함 안 됨
+
+**WWW-Authenticate**
+
+WWW-Authenticate는 서버가 클라이언트에게 “인증 방식”을 알려주는 HTTP 응답 헤더
+
+"너 이 요청하려면 인증 필요해! 어떤 방식으로 인증해야 하는지 알려줄게!"
+
+1. Basic 인증
+   ```http request
+   HTTP/1.1 401 Unauthorized
+   WWW-Authenticate: Basic realm="Admin Area"
+   ```
+   - Basic → 인증 방식 (ID, PW를 base64 인코딩해서 보내는 방식)
+   - realm="..." → 인증 대상 영역 (UI에서 보여줄 이름)
+     - 같은 서버라도 realm이 다르면 다른 인증 정보로 간주돼
+
+     👉 브라우저는 이걸 보고 로그인 팝업창을 자동으로 띄우기도 함!
+
+2: Bearer (OAuth2 토큰 기반 인증)
+```http request
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer realm="example", error="invalid_token"
+```
+→ 이건 API 요청에서 자주 씀
+→ 클라이언트에게 “Bearer 토큰을 써야 해”라고 말해주는 것
+
+✅ 클라이언트는 이걸 보고 뭘 하냐?
+1.	서버가 401 + WWW-Authenticate 헤더를 보내면
+2.	클라이언트는 거기에 맞는 인증 정보를 Authorization 헤더에 담아서 다시 요청
+
+❗ 주의할 점
+- Authenticate는 401 Unauthorized 응답에서만 나와야 한다
+- 없으면 → 브라우저는 인증 요구인지 모름
+- 너무 막 쓰면 → 브라우저 로그인 팝업이 튀어나올 수 있음!
 
 ### 요구사항 6 - stylesheet 적용
-* 
+**Content-Type**
+
+Content-Type은 HTTP 메시지 바디의 데이터 형식을 명시하는 헤더야.
+
+즉, “지금 보내는/받은 데이터는 이런 타입이야!” 라고 말해주는 거지.
+
+ex)
+- text/html
+- application/json
+- multipart/form-data
+- image/jpeg, image/png
+- application/x-www-form-urlencoded
+
+Spring에서 Content-Type을 결정하는 주체는 → HttpMessageConverter라는 놈이야.
+-  HttpMessageConverter가 요청/응답 내용을 보고
+   - 어떤 타입인지 판단하고
+   - Content-Type 헤더를 자동으로 설정해줌
+
+그리고 그걸 DispatcherServlet → HandlerAdapter → 메시지 컨버터 단계에서 자동 처리함.
+
+```
+요청 → DispatcherServlet → HandlerMapping → Controller
+                                  ↓
+                             return 값
+                                  ↓
+                (ResponseBody 또는 @RestController면)
+                        → HttpMessageConverter
+                                  ↓
+                 → Content-Type 자동 결정 + 직렬화
+```
 
 ### heroku 서버에 배포 후
 * 
